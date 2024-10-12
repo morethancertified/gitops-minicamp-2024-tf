@@ -1,0 +1,50 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFormation template to create S3 and DynamoDB for Terraform Backend
+
+Parameters:
+  S3BucketName:
+    Type: String
+    Description: The name of the S3 bucket to be created for storing Terraform state files.
+    Default: gitops-tf-backend
+
+  DynamoDBTableName:
+    Type: String
+    Description: The name of the DynamoDB table to be created for Terraform state locking.
+    Default: GitopsTerraformLocks
+
+Resources:
+  TerraformBackendBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: !Ref S3BucketName
+      VersioningConfiguration:
+        Status: Enabled
+
+  TerraformBackendDynamoDBTable:
+    Type: 'AWS::DynamoDB::Table'
+    Properties:
+      TableName: !Ref DynamoDBTableName
+      AttributeDefinitions:
+        - AttributeName: LockID
+          AttributeType: S
+      KeySchema:
+        - AttributeName: LockID
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      SSESpecification:
+        SSEEnabled: true
+
+Outputs:
+  TerraformBackendBucketName:
+    Description: "S3 bucket name for the Terraform backend."
+    Value: !Ref TerraformBackendBucket
+    Export:
+      Name: !Sub "${AWS::StackName}-TerraformBackendBucketName"
+
+  TerraformBackendDynamoDBTableName:
+    Description: "DynamoDB table name for the Terraform backend."
+    Value: !Ref TerraformBackendDynamoDBTable
+    Export:
+      Name: !Sub "${AWS::StackName}-TerraformBackendDynamoDBTableName"
